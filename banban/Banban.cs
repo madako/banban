@@ -22,20 +22,20 @@ namespace banban
         [System.Runtime.InteropServices.DllImport("winmm.dll", CharSet = System.Runtime.InteropServices.CharSet.Auto)]
         private static extern int mciSendString(string command, System.Text.StringBuilder buffer, int bufferSize, IntPtr hwndCallback);
 
-        private const string ImageFolder = "./Resources/Images/";
-        private const string SoundFolder = "./Resources/Sounds/";
+        private static string ImageFolder = Path.Combine(path1: Directory.GetCurrentDirectory(), "Resources", "Images");
+        private static string SoundFolder = Path.Combine(path1: Directory.GetCurrentDirectory(), "Resources", "Sounds");
 
-        private string[] ImageList { get;  set; }
+        private string[] ImageList { get; set; }
+        private string[] SoundList { get; set; }
 
         private List<PictureBox> PictureBoxList = new List<PictureBox>();
-
-        private Timer timer = new Timer();
 
         public Banban()
         {
             InitializeComponent();
 
             ImageList = Directory.GetFiles(ImageFolder);
+            SoundList = Directory.GetFiles(SoundFolder);
 
         }
 
@@ -47,108 +47,86 @@ namespace banban
 
         private void Banban_KeyDown(object sender, KeyEventArgs e)
         {
-            DeleteEventHandler(Banban_KeyDown);
 
-
-            label1.Text = DateTime.Now.ToLongTimeString();
 
 
             // Checking process for required variables, etc.
 
-            // If there are no images to display in the image array, the process ends.
-            if (ImageList.Length == 0)
+            // If there are no images and sounds to display in the image/sound array, the process ends.
+            if (ImageList.Length == 0 || SoundList.Length ==0)
             {
                 return;
             }
 
             // Random number generation
+            // set show image number and make sound.
             Random r1 = new System.Random();
+            int makeSoundIndex = r1.Next(0, SoundList.Length);
             int showImageIndex = r1.Next(0, ImageList.Length);
-
-            // Generate the path of the image to be displayed
-            string showImagePath = Path.Combine(ImageList[showImageIndex]);
 
             // Set the display position of the image by a random number.
             int x = r1.Next(0, this.Width);
             int y = r1.Next(0, this.Height);
 
-            // Get the last picturebox in Picture Box List
-            PictureBox lastPictureBox = null;
-            if (PictureBoxList.Count == 0)
-            {
-                lastPictureBox = picbox_backGroundPictureBox;
-            }
-            else
-            {
-                lastPictureBox = PictureBoxList.Last();
-            }
+            // Make Sound
+            MakeSound(makeSoundIndex);
 
             // Show Image
-            Bitmap bmp = new Bitmap(showImagePath);
-            bmp.MakeTransparent(bmp.GetPixel(0, 0));
-            PictureBox imageControl = new PictureBox();
-            Controls.Add(imageControl);            
-            imageControl.Name = PictureBoxList.Count.ToString();
-            imageControl.Padding = new Padding(x, y, 0, 0);
-            imageControl.SizeMode = PictureBoxSizeMode.AutoSize;
-            imageControl.BackColor = Color.Transparent;
-            imageControl.Image = bmp;
-            imageControl.Parent = lastPictureBox;
-            imageControl.Dock = DockStyle.Fill;
-            imageControl.BringToFront();
-            imageControl.MouseClick += MakeSound;
-            PictureBoxList.Add(imageControl);
+            ShowImage(showImageIndex, x, y);
 
-            //Animator.Animate(150, (frame, frequency) =>
-            //{
-            //    if (!Visible || IsDisposed) return false;
-            //    Opacity = (double)frame / frequency;
-            //    return true;
-            //});
 
             if (PictureBoxList.Count == 50)
             {
                 PictureBoxList.Clear();
             }
 
-            //Thread.Sleep(1000);
-
-
-            AddEventHandler(Banban_KeyDown);
 
         }
 
-        private Boolean DeleteEventHandler(KeyEventHandler eventHandler)
-        {
 
-            if(eventHandler == Banban_KeyDown)
-            {
-                this.KeyDown -= eventHandler;
-            }
-
-            return true;
-        }
-
-        private Boolean AddEventHandler(KeyEventHandler eventHandler)
-        {
-            DeleteEventHandler(eventHandler);
-
-            if (eventHandler == Banban_KeyDown)
-            {
-                this.KeyDown += eventHandler;
-            }
-
-            return true;
-        }
-
-        private void MakeSound(object sender, EventArgs e)
+        private Boolean MakeSound(int makeSoundIndex)
         {
             //再生するファイル名
-            string fileName = Path.Combine(Directory.GetCurrentDirectory(), "Resources\\Sounds", "se1.wav");
+            string fileName = Path.Combine(SoundFolder, "se_" + makeSoundIndex.ToString());
             
             SoundPlayer player = null;
-            player = new System.Media.SoundPlayer(fileName);
+            player = new System.Media.SoundPlayer(SoundList[makeSoundIndex]);
             player.Play();
+
+            return true;
         }
+
+        private Boolean ShowImage(int showImageIndex, int showX, int showY)
+        {
+
+            // Generate the path of the image/sound to be displayed
+            string showImagePath = Path.Combine(ImageList[showImageIndex]);
+
+            // Show Image
+            Bitmap bmp = new Bitmap(showImagePath);
+            bmp.MakeTransparent(bmp.GetPixel(0, 0));
+            PictureBox imageControl = new PictureBox();
+            Controls.Add(imageControl);
+            imageControl.Name = PictureBoxList.Count.ToString();
+            imageControl.Padding = new Padding(showX, showY, 0, 0);
+            imageControl.SizeMode = PictureBoxSizeMode.AutoSize;
+            imageControl.BackColor = Color.Transparent;
+            imageControl.Image = bmp;
+            imageControl.Dock = DockStyle.Fill;
+            imageControl.BringToFront();
+            // Get the last picturebox in Picture Box List
+            if (PictureBoxList.Count == 0)
+            {
+                imageControl.Parent = this;
+            }
+            else
+            {
+                imageControl.Parent = PictureBoxList.Last();
+            }
+            PictureBoxList.Add(imageControl);
+
+            return true;
+        }
+
     }
 }
